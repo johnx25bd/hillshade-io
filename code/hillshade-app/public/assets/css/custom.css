@@ -1,0 +1,63 @@
+
+
+.form-button {
+  background-color: green;
+  height: 50px;
+}
+
+.top-margin {
+  margin-top: 35px;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  margin-top: 0px;
+  margin-left: -15px;
+}
+
+rect {
+  width: 100%;
+  height: 100%;
+  fill: blue;
+}
+
+.graticule {
+  fill: none;
+  stroke: grey;
+  stroke-width: .5px;
+  stroke-opacity: .5;
+}
+
+.geography {
+  fill: whitesmoke;
+  stroke: grey;
+  stroke-width: 0.5px;
+}
+
+.geography.serviced {
+  fill: lightgrey;
+  stroke: grey;
+
+}
+
+.geography.serviced:hover {
+  fill: grey;
+}
+
+.out-of-service {
+  fill: #F3847C;
+}
+.geography.selected {
+  fill: #B7F1E0;
+}
+
+.geography.selected:hover {
+  fill: #4ADCB2;
+}
+
+.hidden {
+  visibility: hidden;
+  display: none;
+}

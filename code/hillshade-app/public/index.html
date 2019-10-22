@@ -1,0 +1,321 @@
+<!--
+Created for CASA0005: GIS at UCL's Centre for Advanced Spatial Analysis, Autumn 2018 by John R Hoopes IV.
+
+ Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com. -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="A web app to generate custom hillshade imagery">
+  <meta name="author" content="@robisoniv">
+
+  <!-- Bootstrap core CSS -->
+  <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!--  Custom CSS Files -->
+  <link href='assets/css/custom.css' rel='stylesheet'>
+  <link href='assets/css/form.css' rel='stylesheet'>
+
+  <!-- JS to load in head (prior to page rendering) -->
+  <script src="//d3js.org/d3.v4.js"></script>
+  <script src="//d3js.org/d3-geo-projection.v1.min.js"></script>
+  <!-- <script src="//unpkg.com/topojson@3"></script> - for later -->
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+
+</head>
+
+<body>
+  <!-- Download Modal -->
+  <div id='dl-modal' class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Download Image</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id='dem-status-msg'>Status Message</p>
+          <div class="lds-ellipsis hidden">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <div class='check-mark hidden'><span>✅</span></div>
+        </div>
+        <div class="modal-footer">
+          <button id='dl' type="button" class="btn btn-primary" disabled>Preparing ...</button>
+          <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button> -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">hillshade.io</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Maps
+              <span class="sr-only">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/robisoniv/ucl/tree/master/term1/GIS/" target="_blank">Github</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- svg element for d3 to interact with -->
+  <svg id='map'>
+    <rect></rect>
+  </svg>
+
+  <!-- Page Content -->
+  <div class="container main-container">
+    <div class="row">
+      <div class='form-holder col-lg-4 top-margin'>
+        <div class='col-lg-12'>
+          <h5><small>Map Options</small></h5>
+          <div id='area-card' class="card">
+            <div class="card-header">
+              Area
+            </div>
+            <div id='yoyo' class="card-body container-fluid">
+              <div id='select-geography' class='row'>
+                <div class="col-lg-12 card-li state colorado selected" data-geogtype="state" data-geography='colorado'>Colorado</div>
+                <div class="col-lg-12 card-li county archuleta" data-geogtype="county" data-geography='archuleta'>Archuleta County</div>
+                <div class="col-lg-12 card-li county eagle" data-geogtype="county" data-geography='eagle'>Eagle County</div>
+                <div class="col-lg-12 card-li county larimer" data-geogtype="county" data-geography='larimer'>Larimer County</div>
+                <div class="col-lg-12 card-li county weld" data-geogtype="county" data-geography='weld'>Weld County</div>
+                <div class="col-lg-12 card-li county teller" data-geogtype="county" data-geography='teller'>Teller County</div>
+                <div class="col-lg-12 card-li county montezuma" data-geogtype="county" data-geography='montezuma'>Montezuma County</div>
+                <div class="col-lg-12 card-li county gilpin" data-geogtype="county" data-geography='gilpin'>Gilpin County</div>
+                <div class="col-lg-12 card-li county san-juan" data-geogtype="county" data-geography='san-juan'>San Juan County</div>
+                <div class="col-lg-12 card-li county cheyenne" data-geogtype="county" data-geography='cheyenne'>Cheyenne County</div>
+                <div class="col-lg-12 card-li county crowley" data-geogtype="county" data-geography='crowley'>Crowley County</div>
+                <div class="col-lg-12 card-li county dolores" data-geogtype="county" data-geography='dolores'>Dolores County</div>
+                <div class="col-lg-12 card-li county hinsdale" data-geogtype="county" data-geography='hinsdale'>Hinsdale County</div>
+                <div class="col-lg-12 card-li county adams" data-geogtype="county" data-geography='adams'>Adams County</div>
+                <div class="col-lg-12 card-li county jackson" data-geogtype="county" data-geography='jackson'>Jackson County</div>
+                <div class="col-lg-12 card-li county moffat" data-geogtype="county" data-geography='moffat'>Moffat County</div>
+                <div class="col-lg-12 card-li county montrose" data-geogtype="county" data-geography='montrose'>Montrose County</div>
+                <div class="col-lg-12 card-li county broomfield" data-geogtype="county" data-geography='broomfield'>Broomfield County</div>
+                <div class="col-lg-12 card-li county el-paso" data-geogtype="county" data-geography='el-paso'>El Paso County</div>
+                <div class="col-lg-12 card-li county grand" data-geogtype="county" data-geography='grand'>Grand County</div>
+                <div class="col-lg-12 card-li county rio-grande" data-geogtype="county" data-geography='rio-grande'>Rio Grande County</div>
+                <div class="col-lg-12 card-li county jefferson" data-geogtype="county" data-geography='jefferson'>Jefferson County</div>
+                <div class="col-lg-12 card-li county mesa" data-geogtype="county" data-geography='mesa'>Mesa County</div>
+                <div class="col-lg-12 card-li county douglas" data-geogtype="county" data-geography='douglas'>Douglas County</div>
+                <div class="col-lg-12 card-li county pueblo" data-geogtype="county" data-geography='pueblo'>Pueblo County</div>
+                <div class="col-lg-12 card-li county ouray" data-geogtype="county" data-geography='ouray'>Ouray County</div>
+                <div class="col-lg-12 card-li county rio-blanco" data-geogtype="county" data-geography='rio-blanco'>Rio Blanco County</div>
+                <div class="col-lg-12 card-li county san-miguel" data-geogtype="county" data-geography='san-miguel'>San Miguel County</div>
+                <div class="col-lg-12 card-li county park" data-geogtype="county" data-geography='park'>Park County</div>
+                <div class="col-lg-12 card-li county washington" data-geogtype="county" data-geography='washington'>Washington County</div>
+                <div class="col-lg-12 card-li county otero" data-geogtype="county" data-geography='otero'>Otero County</div>
+                <div class="col-lg-12 card-li county sedgwick" data-geogtype="county" data-geography='sedgwick'>Sedgwick County</div>
+                <div class="col-lg-12 card-li county las-animas" data-geogtype="county" data-geography='las-animas'>Las Animas County</div>
+                <div class="col-lg-12 card-li county summit" data-geogtype="county" data-geography='summit'>Summit County</div>
+                <div class="col-lg-12 card-li county kit-carson" data-geogtype="county" data-geography='kit-carson'>Kit Carson County</div>
+                <div class="col-lg-12 card-li county baca" data-geogtype="county" data-geography='baca'>Baca County</div>
+                <div class="col-lg-12 card-li county alamosa" data-geogtype="county" data-geography='alamosa'>Alamosa County</div>
+                <div class="col-lg-12 card-li county fremont" data-geogtype="county" data-geography='fremont'>Fremont County</div>
+                <div class="col-lg-12 card-li county arapahoe" data-geogtype="county" data-geography='arapahoe'>Arapahoe County</div>
+                <div class="col-lg-12 card-li county bent" data-geogtype="county" data-geography='bent'>Bent County</div>
+                <div class="col-lg-12 card-li county conejos" data-geogtype="county" data-geography='conejos'>Conejos County</div>
+                <div class="col-lg-12 card-li county pitkin" data-geogtype="county" data-geography='pitkin'>Pitkin County</div>
+                <div class="col-lg-12 card-li county prowers" data-geogtype="county" data-geography='prowers'>Prowers County</div>
+                <div class="col-lg-12 card-li county phillips" data-geogtype="county" data-geography='phillips'>Phillips County</div>
+                <div class="col-lg-12 card-li county morgan" data-geogtype="county" data-geography='morgan'>Morgan County</div>
+                <div class="col-lg-12 card-li county lincoln" data-geogtype="county" data-geography='lincoln'>Lincoln County</div>
+                <div class="col-lg-12 card-li county saguache" data-geogtype="county" data-geography='saguache'>Saguache County</div>
+                <div class="col-lg-12 card-li county denver" data-geogtype="county" data-geography='denver'>Denver County</div>
+                <div class="col-lg-12 card-li county huerfano" data-geogtype="county" data-geography='huerfano'>Huerfano County</div>
+                <div class="col-lg-12 card-li county mineral" data-geogtype="county" data-geography='mineral'>Mineral County</div>
+                <div class="col-lg-12 card-li county elbert" data-geogtype="county" data-geography='elbert'>Elbert County</div>
+                <div class="col-lg-12 card-li county garfield" data-geogtype="county" data-geography='garfield'>Garfield County</div>
+                <div class="col-lg-12 card-li county clear-creek" data-geogtype="county" data-geography='clear-creek'>Clear Creek County</div>
+                <div class="col-lg-12 card-li county yuma" data-geogtype="county" data-geography='yuma'>Yuma County</div>
+                <div class="col-lg-12 card-li county chaffee" data-geogtype="county" data-geography='chaffee'>Chaffee County</div>
+                <div class="col-lg-12 card-li county kiowa" data-geogtype="county" data-geography='kiowa'>Kiowa County</div>
+                <div class="col-lg-12 card-li county delta" data-geogtype="county" data-geography='delta'>Delta County</div>
+                <div class="col-lg-12 card-li county gunnison" data-geogtype="county" data-geography='gunnison'>Gunnison County</div>
+                <div class="col-lg-12 card-li county routt" data-geogtype="county" data-geography='routt'>Routt County</div>
+                <div class="col-lg-12 card-li county costilla" data-geogtype="county" data-geography='costilla'>Costilla County</div>
+                <div class="col-lg-12 card-li county logan" data-geogtype="county" data-geography='logan'>Logan County</div>
+                <div class="col-lg-12 card-li county custer" data-geogtype="county" data-geography='custer'>Custer County</div>
+                <div class="col-lg-12 card-li county boulder" data-geogtype="county" data-geography='boulder'>Boulder County</div>
+                <div class="col-lg-12 card-li county lake" data-geogtype="county" data-geography='lake'>Lake County</div>
+                <div class="col-lg-12 card-li county la-plata" data-geogtype="county" data-geography='la-plata'>La Plata County</div>
+
+                <!-- Area selection for US States - currently deprecated
+                <div class="col-lg-12 card-li USA country" data-geogtype="county" data-geography="USA">United States</div>
+                <div class="col-lg-12 card-li alaska state" data-geogtype="county" data-geography="alaska">Alaska</div>
+                <div class="col-lg-12 card-li alabama state" data-geogtype="county" data-geography="alabama">Alabama</div>
+                <div class="col-lg-12 card-li arkansas state" data-geogtype="county" data-geography="arkansas">Arkansas</div>
+                <div class="col-lg-12 card-li arizona state" data-geogtype="county" data-geography="arizona">Arizona</div>
+                <div class="col-lg-12 card-li california state" data-geogtype="county" data-geography="california">California</div>
+                <div class="col-lg-12 card-li colorado state" data-geogtype="county" data-geography="colorado">Colorado</div>
+                <div class="col-lg-12 card-li connecticut state" data-geogtype="county" data-geography="connecticut">Connecticut</div>
+                <div class="col-lg-12 card-li district-of-columbia state" data-geogtype="county" data-geography="district-of-columbia">District of Columbia</div>
+                <div class="col-lg-12 card-li delaware state" data-geogtype="county" data-geography="delaware">Delaware</div>
+                <div class="col-lg-12 card-li florida state" data-geogtype="county" data-geography="florida">Florida</div>
+                <div class="col-lg-12 card-li georgia state" data-geogtype="county" data-geography="georgia">Georgia</div>
+                <div class="col-lg-12 card-li guam state" data-geogtype="county" data-geography="guam">Guam</div>
+                <div class="col-lg-12 card-li hawaii state" data-geogtype="county" data-geography="hawaii">Hawaii</div>
+                <div class="col-lg-12 card-li iowa state" data-geogtype="county" data-geography="iowa">Iowa</div>
+                <div class="col-lg-12 card-li idaho state" data-geogtype="county" data-geography="idaho">Idaho</div>
+                <div class="col-lg-12 card-li illinois state" data-geogtype="county" data-geography="illinois">Illinois</div>
+                <div class="col-lg-12 card-li indiana state" data-geogtype="county" data-geography="indiana">Indiana</div>
+                <div class="col-lg-12 card-li kansas state" data-geogtype="county" data-geography="kansas">Kansas</div>
+                <div class="col-lg-12 card-li kentucky state" data-geogtype="county" data-geography="kentucky">Kentucky</div>
+                <div class="col-lg-12 card-li louisiana state" data-geogtype="county" data-geography="louisiana">Louisiana</div>
+                <div class="col-lg-12 card-li massachusetts state" data-geogtype="county" data-geography="massachusetts">Massachusetts</div>
+                <div class="col-lg-12 card-li maryland state" data-geogtype="county" data-geography="maryland">Maryland</div>
+                <div class="col-lg-12 card-li maine state" data-geogtype="county" data-geography="maine">Maine</div>
+                <div class="col-lg-12 card-li michigan state" data-geogtype="county" data-geography="michigan">Michigan</div>
+                <div class="col-lg-12 card-li minnesota state" data-geogtype="county" data-geography="minnesota">Minnesota</div>
+                <div class="col-lg-12 card-li missouri state" data-geogtype="county" data-geography="missouri">Missouri</div>
+                <div class="col-lg-12 card-li mississippi state" data-geogtype="county" data-geography="mississippi">Mississippi</div>
+                <div class="col-lg-12 card-li montana state" data-geogtype="county" data-geography="montana">Montana</div>
+                <div class="col-lg-12 card-li nebraska state" data-geogtype="county" data-geography="nebraska">Nebraska</div>
+                <div class="col-lg-12 card-li new-hampshire state" data-geogtype="county" data-geography="new-hampshire">New Hampshire</div>
+                <div class="col-lg-12 card-li new-jersey state" data-geogtype="county" data-geography="new-jersey">New Jersey</div>
+                <div class="col-lg-12 card-li new-mexico state" data-geogtype="county" data-geography="new-mexico">New Mexico</div>
+                <div class="col-lg-12 card-li nevada state" data-geogtype="county" data-geography="nevada">Nevada</div>
+                <div class="col-lg-12 card-li new-york state" data-geogtype="county" data-geography="new-york">New York</div>
+                <div class="col-lg-12 card-li north-carolina state" data-geogtype="county" data-geography="north-carolina">North Carolina</div>
+                <div class="col-lg-12 card-li north-dakota state" data-geogtype="county" data-geography="north-dakota"> North Dakota</div>
+                <div class="col-lg-12 card-li ohio state" data-geogtype="county" data-geography="ohio">Ohio</div>
+                <div class="col-lg-12 card-li oklahoma state" data-geogtype="county" data-geography="oklahoma">Oklahoma</div>
+                <div class="col-lg-12 card-li oregon state" data-geogtype="county" data-geography="oregon">Oregon</div>
+                <div class="col-lg-12 card-li pennsylvania state" data-geogtype="county" data-geography="pennsylvania">Pennsylvania</div>
+                <div class="col-lg-12 card-li puerto-rico state" data-geogtype="county" data-geography="puerto-rico">Puerto Rico</div>
+                <div class="col-lg-12 card-li rhode-island state" data-geogtype="county" data-geography="rhode-island">Rhode Island</div>
+                <div class="col-lg-12 card-li south-carolina state" data-geogtype="county" data-geography="south-carolina">South Carolina</div>
+                <div class="col-lg-12 card-li south-dakota state" data-geogtype="county" data-geography="south-dakota">South Dakota</div>
+                <div class="col-lg-12 card-li tennessee state" data-geogtype="county" data-geography="tennessee">Tennessee</div>
+                <div class="col-lg-12 card-li texas state" data-geogtype="county" data-geography="texas">Texas</div>
+                <div class="col-lg-12 card-li utah state" data-geogtype="county" data-geography="utah">Utah</div>
+                <div class="col-lg-12 card-li virginia state" data-geogtype="county" data-geography="virginia">Virginia</div>
+                <div class="col-lg-12 card-li vermont state" data-geogtype="county" data-geography="vermont">Vermont</div>
+                <div class="col-lg-12 card-li washington state" data-geogtype="county" data-geography="washington">Washington</div>
+                <div class="col-lg-12 card-li wisconsin state" data-geogtype="county" data-geography="wisconsin">Wisconsin</div>
+                <div class="col-lg-12 card-li west-virginia state" data-geogtype="county" data-geography="west-virginia">West Virginia</div>
+                <div class="col-lg-12 card-li wyoming state" data-geogtype="county" data-geography="wyoming">Wyoming</div>
+                -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Algorithm selection - deferred until future iterations
+            - uncomment if you'd like to see the functional UI we designed.
+          -->
+          <!-- <div id='algorithm-card' class='card'>
+            <div class="card-header">
+              Algorithm
+            </div>
+            <div class="card-body container-fluid">
+              <div id='select-algo' class='row'>
+                <div class="col-lg-12 card-radio" data-algo="hillshade">
+                  <div class='circle selected'></div>Hillshade
+                </div>
+                <div class="col-lg-12 card-radio" data-algo="slope"><span class='circle'></span>Slope</div>
+                <div class="col-lg-12 card-radio" data-algo="aspect"><span class='circle'></span>Aspect</div>
+              </div>
+            </div>
+          </div> -->
+
+          <div id='parameters-card' class='card'>
+            <div class="card-header">
+              Hillshade Parameters
+            </div>
+            <div id='select-hillshade-params' class="params-select card-body container-fluid">
+              <form>
+                <div class="row">
+                  <div class="col-6">
+                    <input id='azimuth-input' type="text" class="form-control" data-param="hayyyyy" placeholder="Azimuth">
+                    <p class='form-helper-text'>0 - 360&deg;</p>
+                  </div>
+                  <div class="col-6">
+                    <input id='altitude-input' type="text" class="form-control" data-param="altitude" placeholder="Altitude">
+                    <p class='form-helper-text'>0 - 90&deg;</p>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-6">
+                    <input id='z-factor-input' type="text" class="form-control" data-param="hayyyyy" placeholder="Z-Factor">
+                    <p class='form-helper-text'>Vertical exaggeration</p>
+                  </div>
+                  <div class="col-6">
+                    <input id='scale-input' type="text" class="form-control" data-param="scale" placeholder="Scale">
+                    <p class='form-helper-text'>Vertical : horizontal</p>
+                    <!-- <p class='form-helper-text'></p> -->
+                  </div>
+                </div>
+              </form>
+              <div class='row'>
+                <div class="col-sm-4 card-radio" data-filetype="GTiff"><span class='circle selected'></span>tif</div>
+                <div class="col-sm-4 card-radio" data-filetype="jpeg"><span class='circle'></span>jpg</div>
+                <div class="col-sm-4 card-radio" data-filetype="png"><span class='circle'></span>png</div>
+              </div>
+            </div>
+            <div id='select-slope-params' class="hidden params-select card-body container-fluid">
+              <form>
+                <div class="row">
+                  <div class="col-12">
+                    <input id='scale-input' type="text" class="form-control" data-param="scale" placeholder="Scale">
+                  </div>
+                </div>
+              </form>
+              <div class='row'>
+                <div class="col-sm-4 card-radio" data-filetype="GTiff"><span class='circle selected'></span>tif</div>
+                <div class="col-sm-4 card-radio" data-filetype="JPG"><span class='circle'></span>jpg</div>
+                <div class="col-sm-4 card-radio" data-filetype="PNG"><span class='circle'></span>png</div>
+              </div>
+            </div>
+            <div id='select-aspect-params' class="hidden params-select card-body container-fluid">
+              <div class='row'>
+                <div class="col-sm-4 card-radio" data-filetype="GTiff"><span class='circle selected'></span>tif</div>
+                <div class="col-sm-4 card-radio" data-filetype="jpg"><span class='circle'></span>jpg</div>
+                <div class="col-sm-4 card-radio" data-filetype="png"><span class='circle'></span>png</div>
+              </div>
+            </div>
+          </div>
+          <div class='row'>
+            <div class="col-lg-12">
+              <div id="generate-dem-request" class="col-lg-12 card-header custom-button" align="center">
+                <span>
+                  <p>Request map ... </p>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="assets/jquery/jquery.min.js"></script>
+  <script src="assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src='assets/js/client.js'></script>
+  <script src='assets/js/form.js'></script>
+</body>
+
+</html>
